@@ -42,6 +42,7 @@ export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTitle, setNewTitle] = useState("");
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   const showError = useCallback((message: string) => {
@@ -49,14 +50,25 @@ export default function Home() {
   }, []);
 
   const loadTasks = useCallback(async () => {
-    const { data, error } = await fetchTasks();
-    if (error) {
-      showError(error);
-    } else if (data) {
-      setTasks(data);
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const { data, error } = await fetchTasks();
+      if (error) {
+        setLoadError(error);
+        setTasks([]);
+        return;
+      }
+      setTasks(data ?? []);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Не удалось загрузить задачи";
+      setLoadError(message);
+      setTasks([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  }, [showError]);
+  }, []);
 
   useEffect(() => {
     loadTasks();
@@ -180,6 +192,20 @@ export default function Home() {
           Alena
         </h1>
 
+        {loadError ? (
+          <div
+            role="alert"
+            className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+          >
+            <p className="font-semibold text-[#EF4444]">Ошибка загрузки данных</p>
+            <p className="mt-1 break-words">{loadError}</p>
+          </div>
+        ) : null}
+
+        {loading ? (
+          <p className="mb-6 text-center text-sm text-gray-400">Загрузка...</p>
+        ) : null}
+
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -194,9 +220,7 @@ export default function Home() {
                 <p className="mt-1 text-sm text-gray-500">{TODAY_DATE}</p>
               </div>
 
-              {loading ? (
-                <p className="text-sm text-gray-400">Загрузка...</p>
-              ) : (
+              {loadError ? null : (
                 <TaskColumn
                   id={CONTAINER_TODAY}
                   itemIds={todayIds}
@@ -237,9 +261,7 @@ export default function Home() {
                 </button>
               </form>
 
-              {loading ? (
-                <p className="text-sm text-gray-400">Загрузка...</p>
-              ) : (
+              {loadError ? null : (
                 <TaskColumn
                   id={CONTAINER_ALL}
                   itemIds={backlogIds}
