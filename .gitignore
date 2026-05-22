@@ -1,0 +1,12 @@
+node_modules/
+.next/
+.env.local
+next-env.d.ts
+out/
+build/
+dist/
+*.log
+*.tar
+*.zip
+*.rar
+*.7z
